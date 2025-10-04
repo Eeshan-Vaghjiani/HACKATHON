@@ -9,6 +9,7 @@ from app.models.base import (
 )
 from app.models.database import Layout
 from app.crud import layout as crud_layout
+from app.services.layout_generator import BasicLayoutGenerator, LayoutGenerationError
 
 router = APIRouter()
 
@@ -70,15 +71,35 @@ def db_layout_to_spec(db_layout: Layout) -> LayoutSpec:
 async def generate_layouts(
     envelope: EnvelopeSpec,
     mission_params: MissionParameters,
+    count: int = Query(5, ge=1, le=8, description="Number of layouts to generate"),
     db: AsyncSession = Depends(get_db)
 ):
     """Generate multiple candidate layouts for a habitat envelope"""
-    # TODO: Implement layout generation algorithm
-    # For now, return a placeholder response
-    raise HTTPException(
-        status_code=501, 
-        detail="Layout generation algorithm not yet implemented. This will be implemented in a future task."
-    )
+    try:
+        # Initialize layout generator
+        generator = BasicLayoutGenerator()
+        
+        # Generate layouts
+        layouts = await generator.generate_layouts(envelope, mission_params, count)
+        
+        # Store layouts in database
+        stored_layouts = []
+        for layout in layouts:
+            try:
+                # Convert LayoutSpec to database format and store
+                db_layout = await crud_layout.create_from_spec(db, layout_spec=layout)
+                stored_layouts.append(layout)
+            except Exception as e:
+                # Log error but continue with other layouts
+                print(f"Warning: Failed to store layout {layout.layout_id}: {str(e)}")
+                stored_layouts.append(layout)  # Still return the generated layout
+        
+        return stored_layouts
+        
+    except LayoutGenerationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating layouts: {str(e)}")
 
 
 @router.get("/", response_model=List[LayoutSpec])

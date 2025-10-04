@@ -10,6 +10,7 @@ import {
 } from '../types/geometry';
 import { VolumePreview } from './VolumePreview';
 import { ParameterControls } from './ParameterControls';
+import { FreeformSculpting } from './FreeformSculpting';
 
 interface VolumeBuilderProps {
   onVolumeChange: (envelope: EnvelopeSpec) => void;
@@ -45,8 +46,16 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
     warnings: []
   });
 
+  // Freeform sculpting mode state
+  const [isSculptingMode, setIsSculptingMode] = useState(false);
+
   // Calculate volume based on envelope type and parameters
   const calculatedVolume = useMemo(() => {
+    if (envelope.type === EnvelopeType.FREEFORM && envelope.sculptingData) {
+      // For freeform, calculate volume from sculpted geometry
+      return calculateFreeformVolume(envelope.sculptingData);
+    }
+
     switch (envelope.type) {
       case EnvelopeType.CYLINDER:
         return calculateCylinderVolume(
@@ -67,7 +76,7 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
       default:
         return 0;
     }
-  }, [envelope.type, envelope.params]);
+  }, [envelope.type, envelope.params, envelope.sculptingData]);
 
   // Handle parameter changes
   const handleParameterChange = useCallback((paramName: string, value: number) => {
@@ -107,6 +116,8 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
         break;
       case EnvelopeType.FREEFORM:
         defaultParams = { complexity: 1.0 };
+        // Enable sculpting mode for freeform
+        setIsSculptingMode(true);
         break;
     }
 
@@ -120,6 +131,11 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
     setValidation(validationResult);
 
     setEnvelope(updatedEnvelope);
+    
+    // Disable sculpting mode for non-freeform types
+    if (newType !== EnvelopeType.FREEFORM) {
+      setIsSculptingMode(false);
+    }
     
     if (validationResult.isValid) {
       onVolumeChange(updatedEnvelope);
@@ -187,6 +203,31 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
     reader.readAsText(file);
   }, [onVolumeChange]);
 
+  // Helper function to calculate freeform volume
+  const calculateFreeformVolume = useCallback((sculptingData: any): number => {
+    // Simplified volume calculation for freeform geometry
+    // In production, use more accurate mesh volume calculation algorithms
+    if (!sculptingData || !sculptingData.baseGeometry) return 0;
+    
+    const baseVolume = calculateCylinderVolume(
+      sculptingData.baseGeometry.params.radius || 1,
+      sculptingData.baseGeometry.params.length || 1
+    );
+    
+    // Apply volume modifications from sculpting operations
+    let volumeModification = 0;
+    for (const operation of sculptingData.sculptingOperations) {
+      const operationVolume = Math.PI * Math.pow(operation.radius, 2) * operation.strength;
+      if (operation.type === 'push' || operation.type === 'inflate') {
+        volumeModification += operationVolume;
+      } else if (operation.type === 'pull' || operation.type === 'pinch') {
+        volumeModification -= operationVolume;
+      }
+    }
+    
+    return Math.max(0, baseVolume + volumeModification);
+  }, []);
+
   return (
     <div className="flex h-full bg-gray-900">
       {/* Left Panel - Controls */}
@@ -223,13 +264,14 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
               {Object.values(EnvelopeType).map((type) => (
                 <button
                   key={type}
+                  data-testid={`shape-${type}`}
                   onClick={() => handleTypeChange(type)}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     envelope.type === type
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
-                  disabled={type === EnvelopeType.FREEFORM} // Disable freeform for now
+                  disabled={false} // Enable freeform sculpting
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
@@ -238,12 +280,31 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
           </div>
 
           {/* Parameter Controls */}
-          <ParameterControls
-            envelopeType={envelope.type}
-            params={envelope.params}
-            onParameterChange={handleParameterChange}
-            validation={validation}
-          />
+          {!isSculptingMode && (
+            <ParameterControls
+              envelopeType={envelope.type}
+              params={envelope.params}
+              onParameterChange={handleParameterChange}
+              validation={validation}
+            />
+          )}
+
+          {/* Freeform Sculpting Toggle */}
+          {envelope.type === EnvelopeType.FREEFORM && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-white">Sculpting Mode</h3>
+              <button
+                onClick={() => setIsSculptingMode(!isSculptingMode)}
+                className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${
+                  isSculptingMode
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {isSculptingMode ? 'Exit Sculpting' : 'Enter Sculpting'}
+              </button>
+            </div>
+          )}
 
           {/* Volume Display */}
           <div className="space-y-3">
@@ -283,6 +344,7 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
             <h3 className="text-lg font-semibold text-white">Export/Import</h3>
             <div className="space-y-2">
               <button
+                data-testid="export-button"
                 onClick={handleExport}
                 disabled={!validation.isValid}
                 className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
@@ -291,6 +353,7 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
               </button>
               <label className="block">
                 <input
+                  data-testid="import-input"
                   type="file"
                   accept=".json"
                   onChange={handleImport}
@@ -305,48 +368,58 @@ export const VolumeBuilder: React.FC<VolumeBuilderProps> = ({
         </div>
       </div>
 
-      {/* Right Panel - 3D Preview */}
-      <div className="flex-1 relative">
-        <Canvas camera={{ position: [8, 8, 8], fov: 60 }}>
-          <ambientLight intensity={0.4} />
-          <pointLight position={[10, 10, 10]} intensity={0.8} />
-          <pointLight position={[-10, -10, -10]} intensity={0.3} />
-          
-          {/* Grid */}
-          <Grid 
-            args={[20, 20]} 
-            cellSize={1} 
-            cellThickness={0.5} 
-            cellColor="#374151" 
-            sectionSize={5} 
-            sectionThickness={1} 
-            sectionColor="#4b5563" 
+      {/* Right Panel - 3D Preview or Sculpting */}
+      <div className="flex-1 relative" data-testid="volume-preview">
+        {isSculptingMode && envelope.type === EnvelopeType.FREEFORM ? (
+          <FreeformSculpting
+            envelope={envelope}
+            onEnvelopeChange={onVolumeChange}
+            isActive={isSculptingMode}
           />
-          
-          {/* Volume Preview */}
-          <VolumePreview envelope={envelope} />
-          
-          <OrbitControls 
-            enablePan={true} 
-            enableZoom={true} 
-            enableRotate={true}
-            maxDistance={50}
-            minDistance={2}
-          />
-        </Canvas>
-        
-        {/* Overlay Info */}
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-3 text-white">
-          <div className="text-sm space-y-1">
-            <div>Volume: {calculatedVolume.toFixed(2)} m³</div>
-            <div className="capitalize">Type: {envelope.type}</div>
-            {validation.isValid ? (
-              <div className="text-green-400">✓ Valid</div>
-            ) : (
-              <div className="text-red-400">✗ Invalid</div>
-            )}
-          </div>
-        </div>
+        ) : (
+          <>
+            <Canvas camera={{ position: [8, 8, 8], fov: 60 }}>
+              <ambientLight intensity={0.4} />
+              <pointLight position={[10, 10, 10]} intensity={0.8} />
+              <pointLight position={[-10, -10, -10]} intensity={0.3} />
+              
+              {/* Grid */}
+              <Grid 
+                args={[20, 20]} 
+                cellSize={1} 
+                cellThickness={0.5} 
+                cellColor="#374151" 
+                sectionSize={5} 
+                sectionThickness={1} 
+                sectionColor="#4b5563" 
+              />
+              
+              {/* Volume Preview */}
+              <VolumePreview envelope={envelope} />
+              
+              <OrbitControls 
+                enablePan={true} 
+                enableZoom={true} 
+                enableRotate={true}
+                maxDistance={50}
+                minDistance={2}
+              />
+            </Canvas>
+            
+            {/* Overlay Info */}
+            <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-3 text-white" data-testid="volume-info">
+              <div className="text-sm space-y-1">
+                <div data-testid="volume-display">Volume: {calculatedVolume.toFixed(2)} m³</div>
+                <div className="capitalize" data-testid="type-display">Type: {envelope.type}</div>
+                {validation.isValid ? (
+                  <div className="text-green-400" data-testid="validation-status">✓ Valid</div>
+                ) : (
+                  <div className="text-red-400" data-testid="validation-status">✗ Invalid</div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

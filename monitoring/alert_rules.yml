@@ -1,0 +1,264 @@
+# ============================================================================
+# PROMETHEUS ALERT RULES FOR HABITATCANVAS
+# ============================================================================
+
+groups:
+  # ============================================================================
+  # APPLICATION HEALTH ALERTS
+  # ============================================================================
+  - name: habitatcanvas.application
+    rules:
+      - alert: BackendDown
+        expr: up{job="habitatcanvas-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "HabitatCanvas backend is down"
+          description: "The HabitatCanvas backend service has been down for more than 1 minute."
+
+      - alert: FrontendDown
+        expr: up{job="habitatcanvas-frontend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: frontend
+        annotations:
+          summary: "HabitatCanvas frontend is down"
+          description: "The HabitatCanvas frontend service has been down for more than 2 minutes."
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="habitatcanvas-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="habitatcanvas-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="habitatcanvas-backend"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes."
+
+      - alert: LowSuccessRate
+        expr: rate(http_requests_total{job="habitatcanvas-backend",status=~"2.."}[10m]) / rate(http_requests_total{job="habitatcanvas-backend"}[10m]) < 0.90
+        for: 10m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Low success rate detected"
+          description: "Success rate is {{ $value | humanizePercentage }} for the last 10 minutes."
+
+  # ============================================================================
+  # INFRASTRUCTURE ALERTS
+  # ============================================================================
+  - name: habitatcanvas.infrastructure
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "The PostgreSQL database has been down for more than 1 minute."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute."
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_database_numbackends{datname="habitatcanvas"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High number of database connections"
+          description: "Database has {{ $value }} active connections."
+
+      - alert: DatabaseConnectionsExhausted
+        expr: pg_stat_database_numbackends{datname="habitatcanvas"} > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connections nearly exhausted"
+          description: "Database has {{ $value }} active connections, approaching limit."
+
+  # ============================================================================
+  # RESOURCE USAGE ALERTS
+  # ============================================================================
+  - name: habitatcanvas.resources
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Low disk space detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+
+      - alert: CriticalDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Critical disk space detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+
+  # ============================================================================
+  # CONTAINER ALERTS
+  # ============================================================================
+  - name: habitatcanvas.containers
+    rules:
+      - alert: ContainerKilled
+        expr: time() - container_last_seen > 60
+        for: 0m
+        labels:
+          severity: warning
+          service: docker
+        annotations:
+          summary: "Container killed"
+          description: "A container has disappeared for {{ $labels.name }}."
+
+      - alert: ContainerCpuUsage
+        expr: (sum(rate(container_cpu_usage_seconds_total{name!=""}[3m])) BY (instance, name) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: docker
+        annotations:
+          summary: "Container CPU usage"
+          description: "Container CPU usage is above 80% for {{ $labels.name }}."
+
+      - alert: ContainerMemoryUsage
+        expr: (sum(container_memory_working_set_bytes{name!=""}) BY (instance, name) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: docker
+        annotations:
+          summary: "Container Memory usage"
+          description: "Container Memory usage is above 80% for {{ $labels.name }}."
+
+  # ============================================================================
+  # BUSINESS LOGIC ALERTS
+  # ============================================================================
+  - name: habitatcanvas.business
+    rules:
+      - alert: LayoutGenerationFailures
+        expr: increase(layout_generation_failures_total[10m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High layout generation failure rate"
+          description: "{{ $value }} layout generation failures in the last 10 minutes."
+
+      - alert: OptimizationTimeout
+        expr: increase(optimization_timeouts_total[15m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Optimization timeouts detected"
+          description: "{{ $value }} optimization timeouts in the last 15 minutes."
+
+      - alert: ExportFailures
+        expr: increase(export_failures_total[10m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Export failures detected"
+          description: "{{ $value }} export failures in the last 10 minutes."
+
+      - alert: LowUserActivity
+        expr: rate(http_requests_total{job="habitatcanvas-backend",endpoint=~"/api/layouts.*"}[1h]) < 0.01
+        for: 2h
+        labels:
+          severity: info
+          service: backend
+        annotations:
+          summary: "Low user activity"
+          description: "Very low user activity detected - less than 1 request per 100 seconds for 2 hours."
+
+  # ============================================================================
+  # SECURITY ALERTS
+  # ============================================================================
+  - name: habitatcanvas.security
+    rules:
+      - alert: HighFailedLoginAttempts
+        expr: increase(failed_login_attempts_total[5m]) > 10
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "{{ $value }} failed login attempts in the last 5 minutes."
+
+      - alert: SuspiciousActivity
+        expr: rate(http_requests_total{job="habitatcanvas-backend",status="403"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "High rate of 403 Forbidden responses: {{ $value }} per second."
+
+      - alert: RateLimitExceeded
+        expr: increase(rate_limit_exceeded_total[5m]) > 50
+        for: 0m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Rate limit frequently exceeded"
+          description: "Rate limit exceeded {{ $value }} times in the last 5 minutes."

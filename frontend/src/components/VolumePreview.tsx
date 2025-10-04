@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Mesh } from 'three';
+import * as THREE from 'three';
 import { EnvelopeSpec, EnvelopeType } from '../types';
 
 interface VolumePreviewProps {
@@ -42,6 +43,23 @@ export const VolumePreview: React.FC<VolumePreviewProps> = ({ envelope }) => {
               envelope.params.minorRadius || 0.5,
               16,
               32
+            ]}
+          />
+        );
+      
+      case EnvelopeType.FREEFORM:
+        if (envelope.sculptingData) {
+          return <FreeformGeometry sculptingData={envelope.sculptingData} />;
+        }
+        // Fallback to cylinder for freeform without sculpting data
+        return (
+          <cylinderGeometry
+            args={[
+              envelope.params.radius || 1,
+              envelope.params.radius || 1,
+              envelope.params.length || 1,
+              32,
+              1
             ]}
           />
         );
@@ -97,6 +115,116 @@ export const VolumePreview: React.FC<VolumePreviewProps> = ({ envelope }) => {
   );
 };
 
+// Helper component for freeform geometry
+const FreeformGeometry: React.FC<{ sculptingData: any }> = ({ sculptingData }) => {
+  const geometry = useMemo(() => {
+    if (!sculptingData || !sculptingData.baseGeometry) return null;
+
+    const { baseGeometry, sculptingOperations } = sculptingData;
+    
+    // Apply sculpting operations to base geometry
+    const modifiedVertices = applyOperationsToGeometry(baseGeometry, sculptingOperations);
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(modifiedVertices, 3));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(baseGeometry.normals, 3));
+    geometry.setIndex(new THREE.BufferAttribute(baseGeometry.faces, 1));
+    geometry.computeVertexNormals();
+    
+    return geometry;
+  }, [sculptingData]);
+
+  if (!geometry) return null;
+
+  return <primitive object={geometry} />;
+};
+
+// Helper function to apply sculpting operations
+function applyOperationsToGeometry(baseGeometry: any, operations: any[]): Float32Array {
+  const vertices = new Float32Array(baseGeometry.vertices);
+  
+  for (const operation of operations) {
+    for (let i = 0; i < vertices.length; i += 3) {
+      const vertex = {
+        x: vertices[i],
+        y: vertices[i + 1],
+        z: vertices[i + 2]
+      };
+
+      const distance = Math.sqrt(
+        Math.pow(vertex.x - operation.position.x, 2) +
+        Math.pow(vertex.y - operation.position.y, 2) +
+        Math.pow(vertex.z - operation.position.z, 2)
+      );
+
+      if (distance < operation.radius) {
+        const falloff = calculateFalloff(distance, operation.radius, operation.falloffType);
+        const displacement = operation.strength * falloff;
+
+        switch (operation.type) {
+          case 'push':
+            vertices[i] += operation.direction.x * displacement;
+            vertices[i + 1] += operation.direction.y * displacement;
+            vertices[i + 2] += operation.direction.z * displacement;
+            break;
+          case 'pull':
+            vertices[i] -= operation.direction.x * displacement;
+            vertices[i + 1] -= operation.direction.y * displacement;
+            vertices[i + 2] -= operation.direction.z * displacement;
+            break;
+        }
+      }
+    }
+  }
+
+  return vertices;
+}
+
+function calculateFalloff(distance: number, radius: number, type: string): number {
+  const normalizedDistance = distance / radius;
+  
+  switch (type) {
+    case 'linear':
+      return 1 - normalizedDistance;
+    case 'smooth':
+      return Math.cos(normalizedDistance * Math.PI * 0.5);
+    case 'sharp':
+      return normalizedDistance < 0.5 ? 1 : 0;
+    default:
+      return 1 - normalizedDistance;
+  }
+}
+
+function calculateFreeformBoundingBox(sculptingData: any): [number, number, number] {
+  if (!sculptingData || !sculptingData.baseGeometry) {
+    return [1, 1, 1];
+  }
+
+  const modifiedVertices = applyOperationsToGeometry(
+    sculptingData.baseGeometry, 
+    sculptingData.sculptingOperations
+  );
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+
+  for (let i = 0; i < modifiedVertices.length; i += 3) {
+    const x = modifiedVertices[i];
+    const y = modifiedVertices[i + 1];
+    const z = modifiedVertices[i + 2];
+
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+
+  return [maxX - minX, maxY - minY, maxZ - minZ];
+}
+
 // Helper component to show bounding box
 const BoundingBoxHelper: React.FC<{ envelope: EnvelopeSpec }> = ({ envelope }) => {
   const boundingBoxDimensions = useMemo(() => {
@@ -118,6 +246,16 @@ const BoundingBoxHelper: React.FC<{ envelope: EnvelopeSpec }> = ({ envelope }) =
         const minorRadius = envelope.params.minorRadius || 0.5;
         const torusDiameter = (majorRadius + minorRadius) * 2;
         return [torusDiameter, torusDiameter, minorRadius * 2];
+      
+      case EnvelopeType.FREEFORM:
+        if (envelope.sculptingData) {
+          // Calculate bounding box from sculpted geometry
+          return calculateFreeformBoundingBox(envelope.sculptingData);
+        }
+        // Fallback to cylinder dimensions
+        const freeformRadius = envelope.params.radius || 1;
+        const freeformLength = envelope.params.length || 1;
+        return [freeformRadius * 2, freeformRadius * 2, freeformLength];
       
       default:
         return [1, 1, 1];

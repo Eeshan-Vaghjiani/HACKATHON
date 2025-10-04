@@ -641,3 +641,45 @@ class LayoutSpec(BaseModel):
             }
         }
     }
+
+# ===
+=========================================================================
+# HEALTH CHECK MODELS
+# ============================================================================
+
+class ServiceStatus(BaseModel):
+    """Status of an individual service or component"""
+    name: str
+    status: str  # "healthy", "degraded", "unhealthy"
+    response_time_ms: Optional[float] = None
+    error: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+    timestamp: Optional[datetime] = Field(default_factory=lambda: datetime.now())
+
+
+class HealthStatus(BaseModel):
+    """Overall application health status"""
+    status: str  # "healthy", "degraded", "unhealthy"
+    timestamp: datetime
+    application: Dict[str, Any]
+    services: Dict[str, ServiceStatus]
+    
+    @computed_field
+    @property
+    def healthy_services(self) -> int:
+        """Count of healthy services"""
+        return sum(1 for service in self.services.values() if service.status == "healthy")
+    
+    @computed_field
+    @property
+    def total_services(self) -> int:
+        """Total number of services"""
+        return len(self.services)
+    
+    @computed_field
+    @property
+    def health_percentage(self) -> float:
+        """Percentage of healthy services"""
+        if self.total_services == 0:
+            return 100.0
+        return (self.healthy_services / self.total_services) * 100.0

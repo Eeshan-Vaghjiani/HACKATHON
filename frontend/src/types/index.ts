@@ -60,6 +60,76 @@ export interface EnvelopeSpec {
     minDimension?: number;
     maxDimension?: number;
   };
+  // Freeform sculpting data
+  sculptingData?: FreeformSculptingData;
+  // Computed properties
+  volume?: number;
+  surfaceArea?: number;
+}
+
+// ============================================================================
+// FREEFORM SCULPTING TYPES
+// ============================================================================
+
+export interface FreeformSculptingData {
+  baseGeometry: BaseGeometryData;
+  splineModifications: SplineModification[];
+  sculptingOperations: SculptingOperation[];
+  undoStack: SculptingOperation[];
+  redoStack: SculptingOperation[];
+  isManifold: boolean;
+  volumeValid: boolean;
+}
+
+export interface BaseGeometryData {
+  type: 'cylinder' | 'box' | 'torus';
+  params: Record<string, number>;
+  vertices: Float32Array;
+  faces: Uint32Array;
+  normals: Float32Array;
+}
+
+export interface SplineModification {
+  id: string;
+  type: 'extrude' | 'inset' | 'bevel';
+  splinePoints: Vector3D[];
+  controlPoints: Vector3D[];
+  strength: number;
+  falloffRadius: number;
+  created: Date;
+}
+
+export interface SculptingOperation {
+  id: string;
+  type: 'push' | 'pull' | 'smooth' | 'inflate' | 'pinch';
+  position: Vector3D;
+  direction: Vector3D;
+  strength: number;
+  radius: number;
+  falloffType: 'linear' | 'smooth' | 'sharp';
+  timestamp: Date;
+  affectedVertices: number[];
+  originalPositions: Vector3D[];
+  newPositions: Vector3D[];
+}
+
+export enum SculptingTool {
+  PUSH = 'push',
+  PULL = 'pull',
+  SMOOTH = 'smooth',
+  INFLATE = 'inflate',
+  PINCH = 'pinch',
+  SPLINE_EXTRUDE = 'spline_extrude',
+  SPLINE_INSET = 'spline_inset'
+}
+
+export interface SculptingSettings {
+  tool: SculptingTool;
+  strength: number;
+  radius: number;
+  falloffType: 'linear' | 'smooth' | 'sharp';
+  symmetry: boolean;
+  symmetryAxis: 'x' | 'y' | 'z';
 }
 
 export interface ModuleSpec {
@@ -112,6 +182,15 @@ export interface LayoutSpec {
     totalPower?: number;
     minClearance?: number;
   };
+  // Computed properties
+  module_count?: number;
+  module_types_count?: Record<string, number>;
+  has_airlock?: boolean;
+  layout_bounds?: {
+    min: Vector3D;
+    max: Vector3D;
+    center: Vector3D;
+  };
 }
 
 export interface PerformanceMetrics {
@@ -127,6 +206,9 @@ export interface PerformanceMetrics {
   safetyScore?: number;
   efficiencyScore?: number;
   volumeUtilization?: number;
+  // Computed metrics
+  overall_score?: number;
+  critical_issues?: string[];
 }
 
 export interface MissionParameters {

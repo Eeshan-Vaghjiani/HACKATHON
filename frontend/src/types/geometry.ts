@@ -488,3 +488,209 @@ export function roundVector3D(vector: Vector3D, decimals: number): Vector3D {
     z: roundToDecimals(vector.z, decimals)
   };
 }
+
+// ============================================================================
+// ADVANCED GEOMETRY CALCULATIONS
+// ============================================================================
+
+/**
+ * Calculate the volume of an envelope based on its type and parameters
+ */
+export function calculateEnvelopeVolume(envelope: { type: string; params: Record<string, number> }): number {
+  switch (envelope.type) {
+    case 'cylinder':
+      return calculateCylinderVolume(envelope.params.radius, envelope.params.length);
+    case 'box':
+      return calculateBoxVolume(envelope.params.width, envelope.params.height, envelope.params.depth);
+    case 'torus':
+      return calculateTorusVolume(envelope.params.major_radius, envelope.params.minor_radius);
+    case 'freeform':
+      return envelope.params.volume || 0;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Calculate the surface area of an envelope
+ */
+export function calculateEnvelopeSurfaceArea(envelope: { type: string; params: Record<string, number> }): number {
+  switch (envelope.type) {
+    case 'cylinder':
+      const r = envelope.params.radius;
+      const l = envelope.params.length;
+      return 2 * Math.PI * r * (r + l); // 2πr² + 2πrl
+    case 'box':
+      const w = envelope.params.width;
+      const h = envelope.params.height;
+      const d = envelope.params.depth;
+      return 2 * (w * h + w * d + h * d);
+    case 'torus':
+      const R = envelope.params.major_radius;
+      const r2 = envelope.params.minor_radius;
+      return 4 * Math.PI * Math.PI * R * r2;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Calculate the centroid of a set of points
+ */
+export function calculateCentroid(points: Vector3D[]): Vector3D {
+  if (points.length === 0) {
+    return createVector3D(0, 0, 0);
+  }
+
+  const sum = points.reduce(
+    (acc, point) => addVectors(acc, point),
+    createVector3D(0, 0, 0)
+  );
+
+  return scaleVector(sum, 1 / points.length);
+}
+
+/**
+ * Calculate the bounding box of a set of points
+ */
+export function calculateBoundingBoxFromPoints(points: Vector3D[]): BoundingBox {
+  if (points.length === 0) {
+    return createBoundingBox(createVector3D(0, 0, 0), createVector3D(0, 0, 0));
+  }
+
+  let minX = points[0].x, maxX = points[0].x;
+  let minY = points[0].y, maxY = points[0].y;
+  let minZ = points[0].z, maxZ = points[0].z;
+
+  for (const point of points) {
+    minX = Math.min(minX, point.x);
+    maxX = Math.max(maxX, point.x);
+    minY = Math.min(minY, point.y);
+    maxY = Math.max(maxY, point.y);
+    minZ = Math.min(minZ, point.z);
+    maxZ = Math.max(maxZ, point.z);
+  }
+
+  return createBoundingBox(
+    createVector3D(minX, minY, minZ),
+    createVector3D(maxX, maxY, maxZ)
+  );
+}
+
+/**
+ * Calculate the shortest path distance between two points avoiding obstacles
+ */
+export function calculateShortestPath(
+  start: Vector3D,
+  end: Vector3D,
+  obstacles: BoundingBox[]
+): number {
+  // Simplified A* pathfinding - for a more complete implementation,
+  // this would use a proper pathfinding algorithm
+  
+  // If direct path is clear, return straight-line distance
+  if (checkPathClearance(start, end, obstacles, 0.6)) {
+    return distance3D(start, end);
+  }
+
+  // Otherwise, estimate path around obstacles (simplified)
+  const directDistance = distance3D(start, end);
+  const obstacleCount = obstacles.length;
+  
+  // Rough estimation: add 50% for each obstacle that might be in the way
+  return directDistance * (1 + obstacleCount * 0.5);
+}
+
+/**
+ * Check if a point is inside any of the given bounding boxes
+ */
+export function pointInAnyBoundingBox(point: Vector3D, boxes: BoundingBox[]): boolean {
+  return boxes.some(box => pointInBoundingBox(point, box));
+}
+
+/**
+ * Find the closest point on a bounding box to a given point
+ */
+export function closestPointOnBoundingBox(point: Vector3D, bbox: BoundingBox): Vector3D {
+  return createVector3D(
+    clamp(point.x, bbox.min.x, bbox.max.x),
+    clamp(point.y, bbox.min.y, bbox.max.y),
+    clamp(point.z, bbox.min.z, bbox.max.z)
+  );
+}
+
+/**
+ * Calculate the overlap volume between two bounding boxes
+ */
+export function calculateBoundingBoxOverlap(bbox1: BoundingBox, bbox2: BoundingBox): number {
+  if (!boundingBoxesIntersect(bbox1, bbox2)) {
+    return 0;
+  }
+
+  const overlapMin = createVector3D(
+    Math.max(bbox1.min.x, bbox2.min.x),
+    Math.max(bbox1.min.y, bbox2.min.y),
+    Math.max(bbox1.min.z, bbox2.min.z)
+  );
+
+  const overlapMax = createVector3D(
+    Math.min(bbox1.max.x, bbox2.max.x),
+    Math.min(bbox1.max.y, bbox2.max.y),
+    Math.min(bbox1.max.z, bbox2.max.z)
+  );
+
+  const dimensions = subtractVectors(overlapMax, overlapMin);
+  return dimensions.x * dimensions.y * dimensions.z;
+}
+
+/**
+ * Generate a grid of points within a bounding box
+ */
+export function generateGridPoints(bbox: BoundingBox, spacing: number): Vector3D[] {
+  const points: Vector3D[] = [];
+  const dimensions = subtractVectors(bbox.max, bbox.min);
+  
+  const stepsX = Math.ceil(dimensions.x / spacing);
+  const stepsY = Math.ceil(dimensions.y / spacing);
+  const stepsZ = Math.ceil(dimensions.z / spacing);
+
+  for (let i = 0; i <= stepsX; i++) {
+    for (let j = 0; j <= stepsY; j++) {
+      for (let k = 0; k <= stepsZ; k++) {
+        const x = bbox.min.x + (i / stepsX) * dimensions.x;
+        const y = bbox.min.y + (j / stepsY) * dimensions.y;
+        const z = bbox.min.z + (k / stepsZ) * dimensions.z;
+        points.push(createVector3D(x, y, z));
+      }
+    }
+  }
+
+  return points;
+}
+
+/**
+ * Calculate the angle between two vectors in radians
+ */
+export function angleBetweenVectors(v1: Vector3D, v2: Vector3D): number {
+  const dot = dotProduct(normalizeVector(v1), normalizeVector(v2));
+  return Math.acos(clamp(dot, -1, 1));
+}
+
+/**
+ * Project a vector onto another vector
+ */
+export function projectVector(vector: Vector3D, onto: Vector3D): Vector3D {
+  const ontoNormalized = normalizeVector(onto);
+  const projectionLength = dotProduct(vector, ontoNormalized);
+  return scaleVector(ontoNormalized, projectionLength);
+}
+
+/**
+ * Calculate the area of a triangle given three points
+ */
+export function triangleArea(p1: Vector3D, p2: Vector3D, p3: Vector3D): number {
+  const v1 = subtractVectors(p2, p1);
+  const v2 = subtractVectors(p3, p1);
+  const cross = crossProduct(v1, v2);
+  return vectorMagnitude(cross) / 2;
+}

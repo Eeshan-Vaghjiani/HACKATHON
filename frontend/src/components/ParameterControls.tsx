@@ -151,6 +151,7 @@ export const ParameterControls: React.FC<ParameterControlsProps> = ({
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
+                  data-testid={`${config.name}-input`}
                   value={currentValue.toFixed(1)}
                   onChange={(e) => handleInputChange(config.name, e.target.value)}
                   min={config.min}
@@ -172,6 +173,7 @@ export const ParameterControls: React.FC<ParameterControlsProps> = ({
             <div className="px-1">
               <input
                 type="range"
+                data-testid={`${config.name}-slider`}
                 value={currentValue}
                 onChange={(e) => handleSliderChange(config.name, e.target.value)}
                 min={config.min}
