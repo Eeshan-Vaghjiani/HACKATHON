@@ -1,0 +1,16 @@
+# Placeholder GLB file for Galley module
+# In a real implementation, this would be a binary GLTF file
+# containing the 3D model for the galley/kitchen module.
+#
+# The galley module should include:
+# - Food preparation surfaces and equipment
+# - Water dispensing and recycling systems
+# - Waste management interfaces
+# - Dining area with restraints for microgravity
+# - Storage for food and utensils
+# - Connection ports for utilities
+#
+# Dimensions: 3.0 x 2.5 x 2.2 meters
+# This placeholder should be replaced with actual 3D assets.
+
+PLACEHOLDER_GLB_CONTENT

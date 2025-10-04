@@ -1,0 +1,146 @@
+{
+  "sleep_quarter.glb": {
+    "asset_id": "sleep_quarter.glb",
+    "file_path": "sleep_quarter.glb",
+    "checksum": "6c03e44e1365616dd45d992083370e80",
+    "size_bytes": 676,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.292411",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "sleep_quarter.glb",
+      "file_size": 676,
+      "created": "2025-10-04T13:28:16.388971",
+      "modified": "2025-10-04T13:28:19.912295",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "galley.glb": {
+    "asset_id": "galley.glb",
+    "file_path": "galley.glb",
+    "checksum": "b1b2a8d2b00f39d296c2e079746d529e",
+    "size_bytes": 573,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.295413",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "galley.glb",
+      "file_size": 573,
+      "created": "2025-10-04T13:28:24.468273",
+      "modified": "2025-10-04T13:28:26.503693",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "laboratory.glb": {
+    "asset_id": "laboratory.glb",
+    "file_path": "laboratory.glb",
+    "checksum": "d635fefcaf87264b223c6920e0b73443",
+    "size_bytes": 583,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.297415",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "laboratory.glb",
+      "file_size": 583,
+      "created": "2025-10-04T13:28:30.395887",
+      "modified": "2025-10-04T13:28:31.831094",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "airlock.glb": {
+    "asset_id": "airlock.glb",
+    "file_path": "airlock.glb",
+    "checksum": "5d0dd79b45b051b3bd6b97bf8235c9d5",
+    "size_bytes": 551,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.299410",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "airlock.glb",
+      "file_size": 551,
+      "created": "2025-10-04T13:28:35.869546",
+      "modified": "2025-10-04T13:28:37.354971",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "mechanical.glb": {
+    "asset_id": "mechanical.glb",
+    "file_path": "mechanical.glb",
+    "checksum": "3c6cc82c359133328f6f19bc8388795c",
+    "size_bytes": 657,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.301410",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "mechanical.glb",
+      "file_size": 657,
+      "created": "2025-10-04T13:28:41.798239",
+      "modified": "2025-10-04T13:28:43.996815",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "medical.glb": {
+    "asset_id": "medical.glb",
+    "file_path": "medical.glb",
+    "checksum": "55cdb36c53af5d3ff2a24457570280d6",
+    "size_bytes": 566,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.303413",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "medical.glb",
+      "file_size": 566,
+      "created": "2025-10-04T13:28:48.769050",
+      "modified": "2025-10-04T13:28:50.567748",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "exercise.glb": {
+    "asset_id": "exercise.glb",
+    "file_path": "exercise.glb",
+    "checksum": "a5fe778d508c320a21a35ce63e6f15b9",
+    "size_bytes": 583,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.305414",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "exercise.glb",
+      "file_size": 583,
+      "created": "2025-10-04T13:28:54.557586",
+      "modified": "2025-10-04T13:28:56.479568",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  },
+  "storage.glb": {
+    "asset_id": "storage.glb",
+    "file_path": "storage.glb",
+    "checksum": "a1f8185b5b0211d729d9989135f0031e",
+    "size_bytes": 569,
+    "format": "glb",
+    "last_accessed": "2025-10-04T10:40:42.308413",
+    "access_count": 0,
+    "metadata": {
+      "file_name": "storage.glb",
+      "file_size": 569,
+      "created": "2025-10-04T13:29:01.238797",
+      "modified": "2025-10-04T13:29:02.875777",
+      "format": "binary",
+      "gltf_version": "2.0",
+      "generator": "unknown"
+    }
+  }
+}

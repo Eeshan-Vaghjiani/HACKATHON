@@ -1,0 +1,16 @@
+# Placeholder GLB file for Medical module
+# In a real implementation, this would be a binary GLTF file
+# containing the 3D model for the medical bay.
+#
+# The medical module should include:
+# - Examination and treatment area
+# - Medical equipment and monitoring systems
+# - Pharmaceutical storage with temperature control
+# - Emergency medical supplies
+# - Isolation capability for quarantine
+# - Medical gas supply connections
+#
+# Dimensions: 3.0 x 2.5 x 2.5 meters
+# This placeholder should be replaced with actual 3D assets.
+
+PLACEHOLDER_GLB_CONTENT

@@ -1,0 +1,16 @@
+# Placeholder GLB file for Airlock module
+# In a real implementation, this would be a binary GLTF file
+# containing the 3D model for the EVA airlock.
+#
+# The airlock module should include:
+# - Pressurized chamber with dual hatches
+# - EVA suit storage and donning area
+# - Life support interface connections
+# - Emergency backup systems
+# - Tool and equipment storage
+# - Pressure monitoring and control systems
+#
+# Dimensions: 2.5 x 2.5 x 3.0 meters
+# This placeholder should be replaced with actual 3D assets.
+
+PLACEHOLDER_GLB_CONTENT
