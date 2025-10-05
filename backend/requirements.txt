@@ -24,7 +24,6 @@ mesa==2.2.4
 networkx==3.2.1
 trimesh==4.0.5
 pygltflib==1.16.1
-python-opencascade==7.7.2
 reportlab==4.0.7
 matplotlib==3.8.2
 Pillow==10.1.0

@@ -4,7 +4,7 @@
  * Handles exporting layouts and models in various formats
  */
 
-import { api } from './api';
+import { apiClient as api } from './api';
 
 export interface ExportFormat {
   format: string;

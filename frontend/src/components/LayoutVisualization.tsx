@@ -199,7 +199,7 @@ function validateModulePlacement(
 /**
  * Snap position to grid
  */
-function snapToGrid(position: [number, number, number], gridSize: number): [number, number, number] {
+function snapPositionToGrid(position: [number, number, number], gridSize: number): [number, number, number] {
   return [
     Math.round(position[0] / gridSize) * gridSize,
     Math.round(position[1] / gridSize) * gridSize,
@@ -374,7 +374,7 @@ const InteractiveModule: React.FC<ModuleVisualizationProps> = ({
       
       // Apply snap to grid if enabled
       if (snapToGrid) {
-        newPosition = snapToGrid(newPosition, gridSize);
+        newPosition = snapPositionToGrid(newPosition, gridSize);
       }
       
       setTempPosition(newPosition);

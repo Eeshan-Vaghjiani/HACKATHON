@@ -1,14 +1,12 @@
-version: '3.8'
-
 services:
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8000/api/v1
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -22,7 +20,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://habitatcanvas:password@db:5432/habitatcanvas
+      - DATABASE_URL=postgresql+asyncpg://habitatcanvas:password@db:5432/habitatcanvas
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=development
     volumes:
@@ -30,7 +28,7 @@ services:
     depends_on:
       - db
       - redis
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn simple_main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
     image: postgres:15-alpine
