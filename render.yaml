@@ -1,46 +1,28 @@
 services:
-  backend:
-    type: web
-    name: backend
+  - type: web
+    name: habitat-canvas-backend
     env: docker
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: ./backend/Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: pserv
-          name: db
+        fromDatabase:
+          name: habitat-canvas-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: redis
-          property: connectionString
+        value: redis://localhost:6379
     plan: free
-    autoDeploy: true
 
-  frontend:
-    type: web
-    name: frontend
+  - type: web
+    name: habitat-canvas-frontend
     env: docker
-    dockerfilePath: frontend/Dockerfile
+    dockerfilePath: ./frontend/Dockerfile
     envVars:
       - key: VITE_API_URL
-        value: https://backend-<your-app-slug>.onrender.com
+        value: https://habitat-canvas-backend.onrender.com
     plan: free
-    autoDeploy: true
 
-  db:
-    type: pserv
-    name: db
+databases:
+  - name: habitat-canvas-db
+    databaseName: habitatcanvas
+    user: habitatcanvas
     plan: free
-    autoDeploy: true
-    properties:
-      postgresVersion: 15
-      user: habitatcanvas
-      database: habitatcanvas
-
-  redis:
-    type: redis
-    name: redis
-    plan: free
-    autoDeploy: true
