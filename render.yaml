@@ -4,8 +4,6 @@ services:
     name: backend
     env: docker
     dockerfilePath: backend/Dockerfile
-    buildCommand: ''
-    startCommand: ''
     envVars:
       - key: DATABASE_URL
         fromService:
@@ -25,8 +23,6 @@ services:
     name: frontend
     env: docker
     dockerfilePath: frontend/Dockerfile
-    buildCommand: ''
-    startCommand: ''
     envVars:
       - key: VITE_API_URL
         value: https://backend-<your-app-slug>.onrender.com
@@ -36,7 +32,6 @@ services:
   db:
     type: pserv
     name: db
-    env: postgres
     plan: free
     autoDeploy: true
     properties:
