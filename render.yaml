@@ -1,8 +1,9 @@
 services:
   - type: web
     name: habitat-canvas-backend
-    env: docker
+    runtime: docker
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -10,15 +11,20 @@ services:
           property: connectionString
       - key: REDIS_URL
         value: redis://localhost:6379
+      - key: PORT
+        value: 8000
     plan: free
 
   - type: web
     name: habitat-canvas-frontend
-    env: docker
+    runtime: docker
     dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
     envVars:
       - key: VITE_API_URL
         value: https://habitat-canvas-backend.onrender.com
+      - key: PORT
+        value: 3000
     plan: free
 
 databases:
