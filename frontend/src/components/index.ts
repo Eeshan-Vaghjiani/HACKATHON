@@ -9,3 +9,4 @@ export { LayoutDashboard } from './LayoutDashboard';
 export { MetricsDashboard } from './MetricsDashboard';
 export { FreeformSculpting } from './FreeformSculpting';
 export { ExportDialog } from './ExportDialog';
+export { PlanetaryComputerPanel } from './PlanetaryComputerPanel';

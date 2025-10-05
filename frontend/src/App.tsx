@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react'
-import { VolumeBuilder, MissionParametersComponent, LayoutDashboard } from './components'
+import { VolumeBuilder, MissionParametersComponent, LayoutDashboard, PlanetaryComputerPanel } from './components'
 import { EnvelopeSpec, MissionParameters, LayoutSpec } from './types'
 import { LayoutAPI } from './services/api'
 
 function App() {
   const [currentEnvelope, setCurrentEnvelope] = useState<EnvelopeSpec | null>(null);
   const [currentMission, setCurrentMission] = useState<MissionParameters | null>(null);
-  const [activeTab, setActiveTab] = useState<'volume' | 'mission' | 'layouts'>('volume');
+  const [activeTab, setActiveTab] = useState<'volume' | 'mission' | 'layouts' | 'planetary'>('volume');
 
   const handleVolumeChange = useCallback((envelope: EnvelopeSpec) => {
     setCurrentEnvelope(envelope);
@@ -85,6 +85,17 @@ function App() {
               <span className="ml-2 text-xs">(Define envelope & mission first)</span>
             )}
           </button>
+          <button
+            data-testid="planetary-tab"
+            onClick={() => setActiveTab('planetary')}
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              activeTab === 'planetary'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            🌍 Planetary Computer
+          </button>
         </div>
       </header>
       
@@ -110,6 +121,9 @@ function App() {
             onGenerateLayouts={handleGenerateLayouts}
             onLayoutSelect={handleLayoutSelect}
           />
+        )}
+        {activeTab === 'planetary' && (
+          <PlanetaryComputerPanel />
         )}
       </main>
     </div>

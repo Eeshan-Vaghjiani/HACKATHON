@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { LayoutVisualization } from './LayoutVisualization';
 import { LayoutSpec, EnvelopeSpec, MissionParameters, PerformanceMetrics } from '../types';
 import { LayoutAPI, formatAPIError, checkAPIConnection } from '../services/api';
+import { validateLayoutInEnvelope, getSafePlacementBounds } from '../utils/envelopeValidation';
 
 // ============================================================================
 // TYPES
@@ -524,6 +525,21 @@ export const LayoutDashboard: React.FC<LayoutDashboardProps> = ({
         newLayouts = await LayoutAPI.generateLayouts(envelope, mission, generationCount);
       }
       
+      // Validate layouts against envelope
+      const validationWarnings: string[] = [];
+      for (const layout of newLayouts) {
+        const validation = validateLayoutInEnvelope(layout.modules, envelope);
+        if (!validation.isValid) {
+          validationWarnings.push(`Layout ${layout.layoutId}: ${validation.errors.join(', ')}`);
+        }
+      }
+      
+      // Show validation warnings if any
+      if (validationWarnings.length > 0) {
+        console.warn('Layout validation warnings:', validationWarnings);
+        setError(`⚠️ Some modules may extend outside envelope. Try increasing envelope size or regenerating layouts.`);
+      }
+      
       setLayouts(newLayouts);
       if (newLayouts.length > 0) {
         setSelectedLayout(newLayouts[0]);
@@ -640,6 +656,35 @@ export const LayoutDashboard: React.FC<LayoutDashboardProps> = ({
             ) : (
               <div className="text-red-400">❌ API Disconnected</div>
             )}
+          </div>
+
+          {/* Envelope Info */}
+          <div className="mb-4 p-3 bg-blue-900/30 border border-blue-600/50 rounded text-blue-200 text-sm">
+            <div className="font-medium mb-1">📐 Envelope Dimensions:</div>
+            <div className="text-xs space-y-1">
+              {envelope.type === 'cylinder' && (
+                <>
+                  <div>Radius: {envelope.params.radius?.toFixed(1) || 5}m</div>
+                  <div>Height: {envelope.params.height?.toFixed(1) || 10}m</div>
+                </>
+              )}
+              {envelope.type === 'box' && (
+                <>
+                  <div>Width: {envelope.params.width?.toFixed(1) || 10}m</div>
+                  <div>Depth: {envelope.params.depth?.toFixed(1) || 10}m</div>
+                  <div>Height: {envelope.params.height?.toFixed(1) || 10}m</div>
+                </>
+              )}
+              {envelope.type === 'torus' && (
+                <>
+                  <div>Major Radius: {envelope.params.majorRadius?.toFixed(1) || 10}m</div>
+                  <div>Minor Radius: {envelope.params.minorRadius?.toFixed(1) || 2}m</div>
+                </>
+              )}
+              <div className="mt-2 pt-2 border-t border-blue-600/30">
+                {getSafePlacementBounds(envelope).description}
+              </div>
+            </div>
           </div>
 
           {/* Error display */}
