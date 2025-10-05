@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { EnvelopeSpec, MissionParameters, LayoutSpec } from '../types';
+import { generateMockLayouts } from './mockData';
 
 // ============================================================================
 // API CONFIGURATION
@@ -7,6 +8,10 @@ import { EnvelopeSpec, MissionParameters, LayoutSpec } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 console.log('API_BASE_URL:', API_BASE_URL);
+
+// Flag to enable mock mode when API is not available
+const ENABLE_MOCK_MODE = true; // Set to true to use mock data when API fails
+let useMockData = false;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -57,6 +62,11 @@ export class LayoutAPI {
     missionParams: MissionParameters,
     count: number = 5
   ): Promise<LayoutSpec[]> {
+    if (useMockData) {
+      console.log('Using mock data for layout generation');
+      return generateMockLayouts(envelope, missionParams, count);
+    }
+    
     try {
       const response = await apiClient.post<LayoutSpec[]>('/layouts/generate', {
         envelope,
@@ -66,6 +76,12 @@ export class LayoutAPI {
 
       return response.data;
     } catch (error: any) {
+      if (ENABLE_MOCK_MODE) {
+        console.log('API connection failed, switching to mock mode');
+        useMockData = true;
+        return generateMockLayouts(envelope, missionParams, count);
+      }
+      
       if (error.response?.status === 400) {
         throw new Error(`Layout generation failed: ${error.response.data.detail}`);
       } else if (error.response?.status === 500) {
@@ -80,11 +96,21 @@ export class LayoutAPI {
    * Get all generated layouts
    */
   static async getLayouts(envelopeId?: string): Promise<LayoutSpec[]> {
+    if (useMockData) {
+      console.log('Using mock data for fetching layouts');
+      return generateMockLayouts();
+    }
+    
     try {
       const params = envelopeId ? { envelope_id: envelopeId } : {};
       const response = await apiClient.get<LayoutSpec[]>('/layouts/', { params });
       return response.data;
     } catch (error: any) {
+      if (ENABLE_MOCK_MODE) {
+        console.log('API connection failed, switching to mock mode');
+        useMockData = true;
+        return generateMockLayouts();
+      }
       throw new Error('Failed to fetch layouts');
     }
   }
@@ -93,10 +119,25 @@ export class LayoutAPI {
    * Get a specific layout by ID
    */
   static async getLayout(layoutId: string): Promise<LayoutSpec> {
+    if (useMockData) {
+      console.log('Using mock data for fetching layout');
+      const mockLayouts = generateMockLayouts();
+      const layout = mockLayouts.find(l => l.id === layoutId) || mockLayouts[0];
+      return layout;
+    }
+    
     try {
       const response = await apiClient.get<LayoutSpec>(`/layouts/${layoutId}`);
       return response.data;
     } catch (error: any) {
+      if (ENABLE_MOCK_MODE) {
+        console.log('API connection failed, switching to mock mode');
+        useMockData = true;
+        const mockLayouts = generateMockLayouts();
+        const layout = mockLayouts.find(l => l.id === layoutId) || mockLayouts[0];
+        return layout;
+      }
+      
       if (error.response?.status === 404) {
         throw new Error('Layout not found');
       }
