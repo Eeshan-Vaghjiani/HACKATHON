@@ -1,0 +1,51 @@
+services:
+  backend:
+    type: web
+    name: backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    buildCommand: ''
+    startCommand: ''
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis
+          property: connectionString
+    plan: free
+    autoDeploy: true
+
+  frontend:
+    type: web
+    name: frontend
+    env: docker
+    dockerfilePath: frontend/Dockerfile
+    buildCommand: ''
+    startCommand: ''
+    envVars:
+      - key: VITE_API_URL
+        value: https://backend-<your-app-slug>.onrender.com
+    plan: free
+    autoDeploy: true
+
+  db:
+    type: pserv
+    name: db
+    env: postgres
+    plan: free
+    autoDeploy: true
+    properties:
+      postgresVersion: 15
+      user: habitatcanvas
+      database: habitatcanvas
+
+  redis:
+    type: redis
+    name: redis
+    plan: free
+    autoDeploy: true
